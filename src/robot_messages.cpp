@@ -116,6 +116,7 @@ namespace robcomm {
         std::stringstream except_ss;
 
         switch(state) {
+	    case SAFE_STOP_NONE:
             case SAFE_STOP_0:
             case SAFE_STOP_1:
             case SAFE_STOP_2:

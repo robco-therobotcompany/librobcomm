@@ -17,6 +17,7 @@ namespace robcomm {
      * 
      */
     enum SafeStopState {
+        SAFE_STOP_NONE = 0x00,
         SAFE_STOP_0 = 0x03,
         SAFE_STOP_1 = 0x02,
         SAFE_STOP_2 = 0x01

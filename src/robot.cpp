@@ -73,25 +73,28 @@ namespace robcomm
     void Robot::handle_get_message(GET_MSG *msg)
     {
         std::stringstream exception_ss;
+
+	uint16_t payload_len = ntohs(msg->payload_len);
+
         switch (msg->type)
         {
         case MSG_TYPE_GET_UDP_PROTOCOL_VERSION:
-            if (msg->payload_len != 2) {
-                exception_ss << "Invalid payload length " << msg->payload_len << " for GET_UDP_PROTOCOL_VERSION messge";
+            if (payload_len != 2) {
+                exception_ss << "Invalid payload length " << payload_len << " for GET_UDP_PROTOCOL_VERSION messge";
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_udp_protocol_version((MSG_GET_UDP_PROTOCOL_VERSION*)msg->payload);
             break;
         case MSG_TYPE_GET_STATUS:
-            if (msg->payload_len < 5) {
-                exception_ss << "Invalid payload length " << msg->payload_len << " for MSG_TYPE_GET_STATUS message";
+            if (payload_len < 5) {
+                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_STATUS message";
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_status((MSG_GET_STATUS*)msg->payload);
             break;
         case MSG_TYPE_GET_JOINT_ABS:
-            if (msg->payload_len < 1) {
-                exception_ss << "Invalid payload length " << msg->payload_len << " for MSG_TYPE_GET_JOINT_ABS message";
+            if (payload_len < 1) {
+                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_JOINT_ABS message";
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_joint_abs((MSG_GET_JOINT_ABS*)msg->payload);
@@ -175,11 +178,8 @@ namespace robcomm
     void Robot::handle_get_joint_abs(MSG_GET_JOINT_ABS* msg) {
         std::stringstream exception_ss;
 
-        if (msg->n_joints != q.size()) {
-            exception_ss << "Invalid GET_JOINT_ABS message: n_joints is " <<
-                msg->n_joints << " whereas q vector size is " << q.size();
-            throw std::runtime_error(exception_ss.str());
-        }
+	// Resize joint angle vector if necessary
+	q.resize(msg->n_joints);
 
         for (int i = 0; i < msg->n_joints; i ++) {
             q[i] = ntoh_angle(msg->joint_values[i]);

@@ -61,7 +61,7 @@ namespace robcomm {
         uint8_t robot_state;
     };
 
-    struct __attribute((packed)) GET_MSG {
+    struct __attribute__((packed)) GET_MSG {
         uint8_t type;
         uint8_t seq;
         uint8_t last_rx_seq;
