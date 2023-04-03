@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <thread>
+#include <vector>
 
 bool keepRunning = true;
 robcomm::Robot robot("sn23-1000360", 25002, 25000);
@@ -28,6 +29,26 @@ void rx_task() {
     }
 }
 
+void jog_trapezoid(int ms, bool dir, double maxvel) {
+    std::vector<double> dq_cmd = { -.0001, .0, .0, .0, .0 };
+    int cycles = ms/10;
+    double step = -(maxvel - .0001)/(cycles/2);
+
+    if (dir) {
+       dq_cmd[0] = -dq_cmd[0];
+       step = -step;
+    }
+
+    for( int i = 0; i < cycles; i ++) {
+        robot.jog_joints(dq_cmd);
+
+        if (i < cycles/2) dq_cmd[0] += step;
+        else dq_cmd[0] -= step;
+
+        usleep(1e4);
+    }
+}
+
 int main(int argc, char** argv) {
     std::cout << "librobcomm basic_example" << std::endl;
 
@@ -43,6 +64,13 @@ int main(int argc, char** argv) {
     robot.set_state(robcomm::RobotStateCommand::ROBOT_STATE_CMD_OPERATIONAL);
 
     usleep(3e6);
+
+    for (int i = 0; i < 10; i ++) {
+	    jog_trapezoid(2000, false, .005);
+	    jog_trapezoid(2000, true, .005);
+    }
+
+    usleep(1e6);
 
     robot.set_state(robcomm::RobotStateCommand::ROBOT_STATE_CMD_SWITCHED_ON);
 
