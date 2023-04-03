@@ -2,23 +2,20 @@
 #include <iostream>
 #include <unistd.h>
 #include <cstdlib>
+#include <cstdio>
+#include <thread>
+
+bool keepRunning = true;
+robcomm::Robot robot("sn23-1000360", 25002, 25000);
+
 
 void print_robot_status(robcomm::RobotStatus status) {
-    std::cout << "State: " << (uint8_t)status.robot_state << std::endl;
+	printf("State: %#04x\n", status.robot_state);
 }
 
-int main(int argc, char** argv) {
-    std::cout << "librobcomm basic_example" << std::endl;
-
-    robcomm::Robot robot("sn23-1000360", 25001, 25000);
-
-    std::cout << "Connecting to robot..." << std::flush;
-    robot.connect();
-
-    std::cout << " Done." << std::endl;
-
+void rx_task() {
     robcomm::RobotStatus status = {};
-    while(1) {
+    while(keepRunning) {
         robot.receive();
 
         robcomm::RobotStatus new_status = robot.get_status();
@@ -29,4 +26,28 @@ int main(int argc, char** argv) {
 
         usleep(1e3);
     }
+}
+
+int main(int argc, char** argv) {
+    std::cout << "librobcomm basic_example" << std::endl;
+
+    std::cout << "Connecting to robot..." << std::flush;
+    robot.connect();
+
+    std::cout << " Done." << std::endl;
+
+    std::thread rx_thread(rx_task);
+
+    usleep(1e6);
+
+    robot.set_state(robcomm::RobotStateCommand::ROBOT_STATE_CMD_OPERATIONAL);
+
+    usleep(3e6);
+
+    robot.set_state(robcomm::RobotStateCommand::ROBOT_STATE_CMD_SWITCHED_ON);
+
+    usleep(1e6);
+
+    keepRunning = false;
+    rx_thread.join();
 }

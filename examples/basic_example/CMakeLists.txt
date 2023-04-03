@@ -12,6 +12,10 @@ add_dependencies(${PROJECT_NAME}
     robcomm
 )
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC robcomm
+    PRIVATE Threads::Threads
 )
