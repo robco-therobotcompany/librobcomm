@@ -178,8 +178,8 @@ namespace robcomm
     void Robot::handle_get_joint_abs(MSG_GET_JOINT_ABS* msg) {
         std::stringstream exception_ss;
 
-	// Resize joint angle vector if necessary
-	q.resize(msg->n_joints);
+        // Resize joint angle vector if necessary
+        q.resize(msg->n_joints);
 
         for (int i = 0; i < msg->n_joints; i ++) {
             q[i] = ntoh_angle(msg->joint_values[i]);
