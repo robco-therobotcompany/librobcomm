@@ -7,7 +7,7 @@
 #include <vector>
 
 bool keepRunning = true;
-robcomm::Robot robot("sn23-1000360", 25002, 25000);
+robcomm::Robot robot("localhost", 25002, 25000);
 
 
 void print_robot_status(robcomm::RobotStatus status) {

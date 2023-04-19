@@ -28,10 +28,28 @@ namespace robcomm {
             Robot(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote);
             ~Robot();
 
+            /**
+             * @brief Initializes network sockets for robot connection.
+             */
             void connect();
+
+            /**
+             * @brief Processes incoming messages from robot, to be called cyclically.
+             */
             void receive();
 
+            /**
+             * @brief Request the robot to change into given state.
+             * 
+             * @param cmd State command
+             */
             void set_state(RobotStateCommand cmd);
+
+            /**
+             * @brief Send jog command with given joint angles.
+             * 
+             * @param dqs Joint angle vector
+             */
             void jog_joints(std::vector<double> &dqs);
 
             RobotStatus get_status();

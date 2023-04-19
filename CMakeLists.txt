@@ -14,7 +14,9 @@ file(GLOB ROBCOMM_HEADERS include/robcomm/*.hpp)
 
 add_library(robcomm SHARED ${ROBCOMM_SOURCES})
 
-add_subdirectory(examples/basic_example)
+if(BUILD_EXAMPLES)
+  add_subdirectory(examples/basic_example)
+endif()
 
 target_include_directories(robcomm PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>

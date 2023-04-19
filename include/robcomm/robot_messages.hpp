@@ -133,7 +133,7 @@ namespace robcomm {
     int32_t hton_linear(double meters);
     double ntoh_linear(int32_t micrometers);
 
-    int len_UDP_MSG(SET_MSG* m);
+    int len_SET_MSG(SET_MSG* m);
     SET_MSG* new_UDP_MSG(uint8_t msg_type, uint8_t seq, size_t payload_size);
 
     int len_MSG_SET_JOINT_OFFS(MSG_SET_JOINT_OFFS* m);

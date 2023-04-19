@@ -191,7 +191,7 @@ namespace robcomm
     }
 
     void Robot::send_message(SET_MSG* msg) {
-        ssize_t n = sendto(sockfd_tx, msg, len_UDP_MSG(msg), 0, (struct sockaddr*)&robot_addr,
+        ssize_t n = sendto(sockfd_tx, msg, len_SET_MSG(msg), 0, (struct sockaddr*)&robot_addr,
             sizeof(robot_addr));
 
         if (n < 0) {

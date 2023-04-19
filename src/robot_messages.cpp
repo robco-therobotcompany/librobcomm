@@ -10,34 +10,82 @@
 
 namespace robcomm {
 
+    /**
+     * @brief Converts the given angle from radians to nanorad/pi for transport.
+     * 
+     * @param rad Angle in radians
+     * @return Angle in nanorad/pi
+     */
     int32_t hton_angle(double rad) {
         return htonl((int32_t)(rad * 1e9 / M_PI));
     }
 
+    /**
+     * @brief Converts the given angle from nanorad/pi to radians.
+     * 
+     * @param nrad_div_pi Angle in nanorad/pi
+     * @return double Angle in radians
+     */
     double ntoh_angle(int32_t nrad_div_pi) {
         return (double)ntohl(nrad_div_pi) * 1e-9 * M_PI;
     }
 
+    /**
+     * @brief Converts the given value from meters to micrometers.
+     * 
+     * @param meters Value in meters
+     * @return int32_t Value in nanometers
+     */
     int32_t hton_linear(double meters) {
         return htonl((int32_t)(meters * 1e6));
     }
 
+    /**
+     * @brief Converts the given value from micrometers to meters.
+     * 
+     * @param micrometers Value in micrometers
+     * @return double Value in meters
+     */
     double ntoh_linear(int32_t micrometers) {
         return (double)ntohl(micrometers) * 1e-6;
     }
 
+    /**
+     * @brief Returns the size of the given SET_JOINT_OFFS message payload in bytes.
+     * 
+     * @param m Pointer to payload struct
+     * @return Size of payload in bytes
+     */
     int len_MSG_SET_JOINT_OFFS(MSG_SET_JOINT_OFFS* m) {
         return sizeof(MSG_SET_JOINT_OFFS) + m->num_joints * sizeof(*m->joint_angles);
     }
 
-    int len_UDP_MSG(SET_MSG* m) {
+    /**
+     * @brief Returns the size of the given SET message, including its payload.
+     * 
+     * @param m Pointer to message struct
+     * @return Size of message in bytes, including payload
+     */
+    int len_SET_MSG(SET_MSG* m) {
         return sizeof(SET_MSG) + ntohs(m->payload_len);
     }
 
+    /**
+     * @brief Returns the size of the given GET_STATUS_MODULES message payload in bytes.
+     * 
+     * @param m Pointer to payload struct
+     * @return Size of payload in bytes
+     */
     int len_MSG_GET_STATUS_MODULES(MSG_GET_STATUS_MODULES* m) {
         return sizeof(MSG_GET_STATUS_MODULES) + m->n_modules * sizeof(*m->module_states);
     }
 
+    /**
+     * @brief Returns the size of the given GET_STATUS_ERRORS message payload in bytes.
+     * 
+     * @param m Pointer to payload struct
+     * @return Size of payload in bytes
+     */
     int len_MSG_GET_STATUS_ERRORS(MSG_GET_STATUS_ERRORS* m) {
         return sizeof(MSG_GET_STATUS_ERRORS) + m->n_errors * sizeof(*m->errors);
     }
@@ -51,7 +99,7 @@ namespace robcomm {
      * @param msg_type Message type value
      * @param seq Sequence number
      * @param payload_size Size of the payload part of the message
-     * @return SET_MSG* 
+     * @return SET_MSG*
      */
     SET_MSG* new_UDP_MSG(uint8_t msg_type, uint8_t seq, size_t payload_size) {
         SET_MSG* msg = (SET_MSG*)malloc(sizeof(SET_MSG) + payload_size);
@@ -208,32 +256,5 @@ namespace robcomm {
         ms.drive_not_op = modules->module_states[i] & DRIVE_NOT_OP_MASK;
 
         return ms;
-    }
-
-    void print_UDP_MSG(SET_MSG* m) {
-        const char* msgtypestr;
-
-        if (m->type == MSG_TYPE_SET_JOINT_OFFS)
-            msgtypestr = "SET_JOINT_OFFS";
-        else if (m->type == MSG_TYPE_SET_ROBOT_STATE)
-            msgtypestr = "SET_ROBOT_STATE";
-        else
-            msgtypestr = "UNKNOWN";
-
-        printf("type: %#04x (%s)\n", m->type, msgtypestr);
-        printf("seq: %d\n", m->seq);
-        printf("payload_len: %d\n", ntohs(m->payload_len));
-
-        if (m->type == MSG_TYPE_SET_JOINT_OFFS) {
-            MSG_SET_JOINT_OFFS* payload = (MSG_SET_JOINT_OFFS*)m->payload;
-            printf("num_joints: %d\n", payload->num_joints);
-            printf("joint_angles:\n");
-            for (int i = 0; i < payload->num_joints; i ++) {
-                printf("  %02d: %10d (%02.5f)\n", i, ntohl(payload->joint_angles[i]), ntoh_angle(payload->joint_angles[i]));
-            }
-        } else if (m->type == MSG_TYPE_SET_ROBOT_STATE) {
-            MSG_SET_ROBOT_STATE* payload = (MSG_SET_ROBOT_STATE*)m->payload;
-            printf("robot_state: %d\n", payload->robot_state);
-        }
     }
 }
