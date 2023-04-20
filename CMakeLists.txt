@@ -29,6 +29,14 @@ message(STATUS "LIB_DIR: ${ROBCOMM_LIB_INSTALL_DIR}")
 
 install(TARGETS robcomm EXPORT robcommConfig DESTINATION ${ROBCOMM_LIB_INSTALL_DIR})
 install(EXPORT robcommConfig DESTINATION share/robcomm/cmake)
+include(CMakePackageConfigHelpers)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  MyLibConfigVersion.cmake
+  VERSION ${PACKAGE_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
 
 install(FILES
   ${ROBCOMM_HEADERS}
