@@ -3,9 +3,12 @@ project(librobcomm
     VERSION 0.0.0 # default, can be overridden by CI pipeline
     LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 98)  # ROS Melodic uses C++ 03, which is not supported as a value
+                      # but C++ 98 is equivalent.
+
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME runtime)
 
-set(ROBCOMM_INCLUDE_INSTALL_DIR include)
+set(ROBCOMM_INCLUDE_INSTALL_DIR include/robcomm)
 set(ROBCOMM_LIB_INSTALL_DIR lib)
 
 file(GLOB ROBCOMM_SOURCES src/*.cpp)

@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <netinet/in.h>
 #include <vector>
+#include <list>
 
 // Major protocol version this implementation is compatible with
 #define COMPATIBLE_MAJOR_VERSION 4
@@ -48,9 +49,9 @@ namespace robcomm {
             /**
              * @brief Send jog command with given joint angles.
              * 
-             * @param dqs Joint angle vector
+             * @param dqs Joint angle list
              */
-            void jog_joints(std::vector<double> &dqs);
+            void jog_joints(std::list<double> &dqs);
 
             RobotStatus get_status();
             int get_module_count();
@@ -75,7 +76,7 @@ namespace robcomm {
             uint8_t robot_protocol_version_minor;
             uint8_t seq_counter;
 
-            RobotStatus robot_status = {};
+            RobotStatus robot_status;
             std::vector<ModuleState> module_states;
             std::vector<uint16_t> error_codes;
 

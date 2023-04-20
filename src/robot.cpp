@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sstream>
+#include <cstdlib>
 
 #define ROBCOMM_RECV_BUFFER_SIZE 1024 // receive buffer size in bytes
 
@@ -210,7 +211,7 @@ namespace robcomm
         free(msg);
     }
 
-    void Robot::jog_joints(std::vector<double> &dqs) {
+    void Robot::jog_joints(std::list<double> &dqs) {
         if (dqs.size() != q.size())
             std::runtime_error("jog_joints command has size different from internal joint angle vector");
 
@@ -218,8 +219,9 @@ namespace robcomm
         SET_MSG* msg = new_MSG_SET_JOINT_OFFS(seq_counter++, dqs.size());
         MSG_SET_JOINT_OFFS* payload = (MSG_SET_JOINT_OFFS*)msg->payload;
 
+        std::list<double>::iterator it = dqs.begin();
         for (int i = 0; i < dqs.size(); i++) {
-            payload->joint_angles[i] = hton_angle(dqs[i]);
+            payload->joint_angles[i] = hton_angle(*(it++));
         }
 
         send_message(msg);
