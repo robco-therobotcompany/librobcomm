@@ -27,7 +27,7 @@ namespace robcomm {
      * @return double Angle in radians
      */
     double ntoh_angle(int32_t nrad_div_pi) {
-        return (double)ntohl(nrad_div_pi) * 1e-9 * M_PI;
+        return (double)(int32_t)ntohl(nrad_div_pi) * 1e-9 * M_PI;
     }
 
     /**
@@ -47,7 +47,7 @@ namespace robcomm {
      * @return double Value in meters
      */
     double ntoh_linear(int32_t micrometers) {
-        return (double)ntohl(micrometers) * 1e-6;
+        return (double)(int32_t)ntohl(micrometers) * 1e-6;
     }
 
     /**
