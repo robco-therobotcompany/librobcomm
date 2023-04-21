@@ -59,10 +59,8 @@ namespace robcomm
         sockaddr_in from_addr;
 
         socklen_t len = (socklen_t)sizeof(from_addr);
-        int n = recvfrom(sockfd_rx, recv_buffer, ROBCOMM_RECV_BUFFER_SIZE, 0, (sockaddr *)&from_addr, &len);
-
-        if (n > 0)
-        {
+        int n;
+        while ((n = recvfrom(sockfd_rx, recv_buffer, ROBCOMM_RECV_BUFFER_SIZE, 0, (sockaddr *)&from_addr, &len)) > 0) {
             if (n < sizeof(GET_MSG))
                 throw std::runtime_error("Received packet is too short");
 
