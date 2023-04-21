@@ -26,13 +26,13 @@
 namespace robcomm {
     class Robot {
         public:
-            Robot(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote);
+            Robot();
             ~Robot();
 
             /**
              * @brief Initializes network sockets for robot connection.
              */
-            void connect();
+            void connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote);
 
             /**
              * @brief Processes incoming messages from robot, to be called cyclically.
@@ -53,6 +53,7 @@ namespace robcomm {
              */
             void jog_joints(std::list<double> &dqs);
 
+            bool is_initialized();
             RobotStatus get_status();
             int get_module_count();
             ModuleState get_module_state(int i);
@@ -63,6 +64,9 @@ namespace robcomm {
             const std::vector<double>& getJointAngles() const;
 
         private:
+            bool q_valid; // Set to true after first GET_JOINT_ABS message received
+            bool status_valid; // Set to true after first GET_STATUS message received
+
             std::string host;
             uint16_t rx_port_local;
             uint16_t tx_port_remote;

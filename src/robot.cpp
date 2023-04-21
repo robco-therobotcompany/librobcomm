@@ -15,22 +15,21 @@
 namespace robcomm
 {
 
-    Robot::Robot(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote)
+    Robot::Robot()
     {
-        this->host = host;
-        this->rx_port_local = rx_port_local;
-        this->tx_port_remote = tx_port_remote;
-
         this->recv_buffer = new char[ROBCOMM_RECV_BUFFER_SIZE];
 
         this->robot_protocol_version_major = 0;
         this->robot_protocol_version_minor = 0;
-
-        this->seq_counter = 0;
     }
 
-    void Robot::connect()
+    void Robot::connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote)
     {
+        this->host = host;
+        this->rx_port_local = rx_port_local;
+        this->tx_port_remote = tx_port_remote;
+        this->seq_counter = 0;
+
         if ((sockfd_rx = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
             throw std::runtime_error("RX Socket creation failed.");
 
@@ -52,6 +51,10 @@ namespace robcomm
         robot_addr.sin_port = htons(tx_port_remote);
 
         inet_aton(host.c_str(), &robot_addr.sin_addr);
+    }
+
+    bool Robot::is_initialized() {
+        return q_valid && status_valid;
     }
 
     void Robot::receive()
@@ -90,6 +93,7 @@ namespace robcomm
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_status((MSG_GET_STATUS*)msg->payload);
+            status_valid = true;
             break;
         case MSG_TYPE_GET_JOINT_ABS:
             if (payload_len < 1) {
@@ -97,6 +101,7 @@ namespace robcomm
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_joint_abs((MSG_GET_JOINT_ABS*)msg->payload);
+            q_valid = true;
             break;
         case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
         case MSG_TYPE_GET_DETECTED_MODULES:
