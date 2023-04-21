@@ -20,6 +20,10 @@ if(BUILD_EXAMPLES)
   add_subdirectory(examples/basic_example)
 endif()
 
+if (DEBUG_FLAGS)
+    target_compile_options(robcomm PUBLIC -g)
+endif()
+
 target_include_directories(robcomm PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
   $<INSTALL_INTERFACE:include>)
