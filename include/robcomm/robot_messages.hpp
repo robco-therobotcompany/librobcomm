@@ -61,6 +61,12 @@ namespace robcomm {
         uint8_t robot_state;
     };
 
+    struct __attribute__((packed)) MSG_SET_OUTPUT {
+        uint8_t bank;
+        uint32_t address;
+        uint32_t value;
+    };
+
     struct __attribute__((packed)) GET_MSG {
         uint8_t type;
         uint8_t seq;

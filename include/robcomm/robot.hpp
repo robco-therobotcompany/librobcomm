@@ -53,6 +53,8 @@ namespace robcomm {
              */
             void jog_joints(std::list<double> &dqs);
 
+            void set_output(uint8_t bank, uint32_t address, uint32_t value);
+
             bool is_initialized();
             RobotStatus get_status();
             int get_module_count();

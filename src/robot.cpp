@@ -76,7 +76,7 @@ namespace robcomm
     {
         std::stringstream exception_ss;
 
-	uint16_t payload_len = ntohs(msg->payload_len);
+        uint16_t payload_len = ntohs(msg->payload_len);
 
         switch (msg->type)
         {
@@ -226,6 +226,19 @@ namespace robcomm
         for (int i = 0; i < dqs.size(); i++) {
             payload->joint_angles[i] = hton_angle(*(it++));
         }
+
+        send_message(msg);
+
+        free(msg);
+    }
+
+    void Robot::set_output(uint8_t bank, uint32_t address, uint32_t value) {
+        SET_MSG* msg = new_message(MSG_TYPE_SET_OUTPUT, sizeof(MSG_SET_OUTPUT));
+        MSG_SET_OUTPUT* payload = (MSG_SET_OUTPUT*)msg->payload;
+
+        payload->bank = bank;
+        payload->address = address;
+        payload->value = value;
 
         send_message(msg);
 
