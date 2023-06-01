@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(basic_example
-    DESCRIPTION "Basic example to demonstrate the usage of librobcomm."
-    VERSION 0.0.0 # default, can be overridden by CI pipeline
+project(jogging
+    DESCRIPTION "Basic example to demonstrate sending joint velocity commands (jogging)."
+    VERSION 0.1.0 # default, can be overridden by CI pipeline
     LANGUAGES CXX)
 
 add_executable(${PROJECT_NAME}

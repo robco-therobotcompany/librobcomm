@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(librobcomm
-    VERSION 0.0.0 # default, can be overridden by CI pipeline
+    VERSION 0.1.0 # default, can be overridden by CI pipeline
     LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 98)  # ROS Melodic uses C++ 03, which is not supported as a value
-                      # but C++ 98 is equivalent.
+set(CMAKE_CXX_STANDARD 11) 
 
 set(CMAKE_INSTALL_DEFAULT_COMPONENT_NAME runtime)
 
@@ -17,7 +16,8 @@ file(GLOB ROBCOMM_HEADERS include/robcomm/*.hpp)
 add_library(robcomm SHARED ${ROBCOMM_SOURCES})
 
 if(BUILD_EXAMPLES)
-  add_subdirectory(examples/basic_example)
+  add_subdirectory(examples/detected_modules)
+  add_subdirectory(examples/jogging)
 endif()
 
 if (DEBUG_FLAGS)

@@ -49,9 +49,10 @@ namespace robcomm {
             /**
              * @brief Send jog command with given joint angles.
              * 
-             * @param dqs Joint angle list
+             * @param dqs Joint angle vector (values in rad/s), must have
+             *        correct size (number of joints).
              */
-            void jog_joints(std::list<double> &dqs);
+            void jog_joints(std::vector<double> &dqs);
 
             void set_output(uint8_t bank, uint32_t address, uint32_t value);
 

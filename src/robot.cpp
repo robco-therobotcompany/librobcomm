@@ -246,7 +246,7 @@ namespace robcomm
         free(msg);
     }
 
-    void Robot::jog_joints(std::list<double> &dqs) {
+    void Robot::jog_joints(std::vector<double> &dqs) {
         if (dqs.size() != q.size())
             std::runtime_error("jog_joints command has size different from internal joint angle vector");
 
@@ -254,9 +254,11 @@ namespace robcomm
         SET_MSG* msg = new_MSG_SET_JOINT_OFFS(seq_counter++, dqs.size());
         MSG_SET_JOINT_OFFS* payload = (MSG_SET_JOINT_OFFS*)msg->payload;
 
-        std::list<double>::iterator it = dqs.begin();
         for (int i = 0; i < dqs.size(); i++) {
-            payload->joint_angles[i] = hton_angle(*(it++));
+            // / 100 because the controller will execute this dq within 10ms,
+            // so we need to command 1/100th of the velocity value (rad/s) at
+            // a time.
+            payload->joint_angles[i] = hton_angle(dqs[i] / 100.0);
         }
 
         send_message(msg);
