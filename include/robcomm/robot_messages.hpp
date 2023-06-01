@@ -1,6 +1,6 @@
 /** \file robot_messages.hpp
  * \brief UDP messages for robot communication.
- *        Robco UDP protocol v4.3
+ *        Robco UDP protocol v4.5
  *
  * Created on: 24.03.2023
  * Author: Bernhard Vorhofer
@@ -28,6 +28,9 @@ namespace robcomm {
         MSG_TYPE_SET_POSE_ABS = 0x14,
         MSG_TYPE_GET_POSE_ABS = 0x15,
         MSG_TYPE_SET_POSE_OFFS = 0x16,
+        MSG_TYPE_SET_CONSTANT_VELOCITY_TRAJECTORY = 0x1A,
+        MSG_TYPE_SET_GLOBAL_VELOCITY = 0x20,
+        MSG_TYPE_GET_GLOBAL_VELOCITY = 0x21,
         MSG_TYPE_SET_OUTPUT = 0x30,
         MSG_TYPE_GET_OUTPUT = 0x31,
         MSG_TYPE_GET_INPUT = 0x33,

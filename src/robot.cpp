@@ -135,7 +135,7 @@ namespace robcomm
         case MSG_TYPE_SET_STOP:
             break;
         default:
-            exception_ss << "Invalid message type '" << msg->type << "'";
+            exception_ss << "Invalid message type '" << unsigned(msg->type) << "'";
             throw std::runtime_error(exception_ss.str());
             break;
         }
