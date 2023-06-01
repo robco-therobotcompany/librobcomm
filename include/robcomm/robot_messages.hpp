@@ -91,6 +91,18 @@ namespace robcomm {
         //  - 1x MSG_GET_STATUS_ERRORS struct
     };
 
+    struct __attribute__((packed)) MSG_GET_DETECTED_MODULES {
+        uint8_t n_modules;
+        char data[];
+        // Variable-length data:
+        //  - n_modules x MSG_GET_DETECTED_MODULES_MODULE
+    };
+
+    struct __attribute__((packed)) MSG_GET_DETECTED_MODULES_MODULE {
+        uint32_t id;
+        uint32_t serial;
+    };
+
     // Bitmask for robot error flag in GET_STATUS message robot_state field
     const uint8_t ROBOT_ERROR_MASK = 0x80;
 

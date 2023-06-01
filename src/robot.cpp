@@ -54,7 +54,7 @@ namespace robcomm
     }
 
     bool Robot::is_initialized() {
-        return q_valid && status_valid;
+        return q_valid && status_valid && modules_valid;
     }
 
     void Robot::receive()
@@ -103,8 +103,15 @@ namespace robcomm
             handle_get_joint_abs((MSG_GET_JOINT_ABS*)msg->payload);
             q_valid = true;
             break;
-        case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
         case MSG_TYPE_GET_DETECTED_MODULES:
+            if (payload_len < 1) {
+                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_DETECTED_MODULES message";
+                throw std::runtime_error(exception_ss.str());
+            }
+            handle_get_detected_modules((MSG_GET_DETECTED_MODULES*)msg->payload);
+            q_valid = true;
+            break;
+        case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
         case MSG_TYPE_GET_LAST_REACHED_WAYPOINT:
         case MSG_TYPE_SET_JOINT_ABS:
         case MSG_TYPE_SET_JOINT_OFFS:
@@ -190,6 +197,15 @@ namespace robcomm
         }
     }
 
+    void Robot::handle_get_detected_modules(MSG_GET_DETECTED_MODULES* msg) {
+        module_ids.resize(msg->n_modules);
+
+        for (int i = 0; i < msg->n_modules; i ++) {
+            MSG_GET_DETECTED_MODULES_MODULE* module = (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i]);
+            module_ids[i] = module->id;
+        }
+    }
+
     SET_MSG* Robot::new_message(uint8_t msg_type, size_t payload_size) {
         return new_UDP_MSG(msg_type, seq_counter++, payload_size);
     }
@@ -251,6 +267,10 @@ namespace robcomm
 
     int Robot::get_module_count() {
         return module_states.size();
+    }
+
+    uint32_t Robot::get_module_type_id(int i) {
+        return module_ids[i];
     }
 
     ModuleState Robot::get_module_state(int i) {

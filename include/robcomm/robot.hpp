@@ -58,6 +58,7 @@ namespace robcomm {
             bool is_initialized();
             RobotStatus get_status();
             int get_module_count();
+            uint32_t get_module_type_id(int i);
             ModuleState get_module_state(int i);
             int get_error_count();
             uint16_t get_error_code(int i);
@@ -68,6 +69,7 @@ namespace robcomm {
         private:
             bool q_valid; // Set to true after first GET_JOINT_ABS message received
             bool status_valid; // Set to true after first GET_STATUS message received
+            bool modules_valid; // Set to true after first GET_DETECTED_MODULES message received
 
             std::string host;
             uint16_t rx_port_local;
@@ -83,6 +85,7 @@ namespace robcomm {
             uint8_t seq_counter;
 
             RobotStatus robot_status;
+            std::vector<uint32_t> module_ids;
             std::vector<ModuleState> module_states;
             std::vector<uint16_t> error_codes;
 
@@ -95,6 +98,7 @@ namespace robcomm {
             void handle_get_udp_protocol_version(MSG_GET_UDP_PROTOCOL_VERSION* msg);
             void handle_get_status(MSG_GET_STATUS* msg);
             void handle_get_joint_abs(MSG_GET_JOINT_ABS* msg);
+            void handle_get_detected_modules(MSG_GET_DETECTED_MODULES* msg);
     };
 };
 
