@@ -10,8 +10,6 @@
 #include <sstream>
 #include <cstdlib>
 
-#include <iostream>
-
 #define ROBCOMM_RECV_BUFFER_SIZE 1024 // receive buffer size in bytes
 
 namespace robcomm
@@ -216,7 +214,6 @@ namespace robcomm
             if (module_id >= 8000 && module_id <= 8999)
                 continue;
 
-	    std::cout << "Adding module id " << module_id << std::endl;
             module_ids[actual_n_modules] = module_id;
             actual_n_modules ++;
         }
