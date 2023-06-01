@@ -10,6 +10,8 @@
 #include <sstream>
 #include <cstdlib>
 
+#include <iostream>
+
 #define ROBCOMM_RECV_BUFFER_SIZE 1024 // receive buffer size in bytes
 
 namespace robcomm
@@ -203,11 +205,24 @@ namespace robcomm
     void Robot::handle_get_detected_modules(MSG_GET_DETECTED_MODULES* msg) {
         module_ids.resize(msg->n_modules);
 
+        int actual_n_modules = 0;
         for (int i = 0; i < msg->n_modules; i ++) {
             MSG_GET_DETECTED_MODULES_MODULE* module =
                 (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i * sizeof(MSG_GET_DETECTED_MODULES_MODULE)]);
-            module_ids[i] = ntohl(module->id);
+
+	    uint32_t module_id = ntohl(module->id);
+
+            // Ignore clamps
+            if (module_id >= 8000 && module_id <= 8999)
+                continue;
+
+	    std::cout << "Adding module id " << module_id << std::endl;
+            module_ids[actual_n_modules] = module_id;
+            actual_n_modules ++;
         }
+
+        // Resize again, as we ignored some modules.
+        module_ids.resize(actual_n_modules);
     }
 
     SET_MSG* Robot::new_message(uint8_t msg_type, size_t payload_size) {
@@ -270,7 +285,7 @@ namespace robcomm
     }
 
     int Robot::get_module_count() {
-        return module_states.size();
+        return module_ids.size();
     }
 
     uint32_t Robot::get_module_type_id(int i) {
