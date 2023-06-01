@@ -204,7 +204,7 @@ namespace robcomm
         module_ids.resize(msg->n_modules);
 
         for (int i = 0; i < msg->n_modules; i ++) {
-            MSG_GET_DETECTED_MODULES_MODULE* module = (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i]);
+            MSG_GET_DETECTED_MODULES_MODULE* module = (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i * 8]);
             module_ids[i] = ntohl(module->id);
         }
     }
