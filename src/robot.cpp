@@ -118,6 +118,9 @@ namespace robcomm
         case MSG_TYPE_SET_POSE_ABS:
         case MSG_TYPE_GET_POSE_ABS:
         case MSG_TYPE_SET_POSE_OFFS:
+        case MSG_TYPE_SET_CONSTANT_VELOCITY_TRAJECTORY:
+        case MSG_TYPE_SET_GLOBAL_VELOCITY:
+        case MSG_TYPE_GET_GLOBAL_VELOCITY:
         case MSG_TYPE_SET_OUTPUT:
         case MSG_TYPE_GET_OUTPUT:
         case MSG_TYPE_GET_INPUT:
