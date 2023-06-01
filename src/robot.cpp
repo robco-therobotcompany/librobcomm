@@ -109,7 +109,7 @@ namespace robcomm
                 throw std::runtime_error(exception_ss.str());
             }
             handle_get_detected_modules((MSG_GET_DETECTED_MODULES*)msg->payload);
-            q_valid = true;
+            modules_valid = true;
             break;
         case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
         case MSG_TYPE_GET_LAST_REACHED_WAYPOINT:
