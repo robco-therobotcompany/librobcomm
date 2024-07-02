@@ -12,10 +12,7 @@
 #include <stdint.h>
 
 namespace robcomm {
-    /**
-     * @brief Safety stop state as reported in GET_STATUS message.
-     * 
-     */
+    /// Safety stop state as reported in GET_STATUS message.
     enum SafeStopState {
         SAFE_STOP_NONE = 0x00,
         SAFE_STOP_0 = 0x03,
@@ -23,19 +20,13 @@ namespace robcomm {
         SAFE_STOP_2 = 0x01
     };
 
-    /**
-     * @brief Safety mode as reported in GET_STATUS message.
-     * 
-     */
+    /// Safety mode as reported in GET_STATUS message.
     enum SafetyMode {
         SAFETY_MODE_MANUAL_REDUCED_VELOCITY = 0x01,
         SAFETY_MODE_AUTOMATIC = 0x02
     };
 
-    /**
-     * @brief Detailed robot state values as reported in GET_STATUS messages.
-     * 
-     */
+    /// Detailed robot state values as reported in GET_STATUS messages.
     enum RobotState {
         ROBOT_STATE_ERROR = 0x00,
         ROBOT_STATE_IDLE = 0x01,
@@ -50,10 +41,7 @@ namespace robcomm {
         ROBOT_STATE_TRANSITION = 0x7F
     };
 
-    /**
-     * @brief Robot status as reported in GET_STATUS message.
-     * 
-     */
+    /// Robot status as reported in GET_STATUS message.
     struct RobotStatus {
         uint8_t error_flags;
         bool robot_error;
@@ -63,10 +51,7 @@ namespace robcomm {
         SafetyMode safety_mode;
     };
 
-    /**
-     * @brief Module types as reported in GET_STATUS message.
-     * 
-     */
+    /// Module types as reported in GET_STATUS message.
     enum ModuleType {
         MODULE_TYPE_GENERIC = 0x00,
         MODULE_TYPE_DRIVE = 0x01,
@@ -74,20 +59,40 @@ namespace robcomm {
         MODULE_TYPE_IO = 0x04
     };
 
-    /**
-     * @brief Commanded robot state for SET_ROBOT_STATE messages.
-     * 
-     */
+    /// Commanded robot state for SET_ROBOT_STATE messages.
     enum RobotStateCommand {
         ROBOT_STATE_CMD_DISABLED    = 0x00, // not used
         ROBOT_STATE_CMD_SWITCHED_ON = 0x01,
         ROBOT_STATE_CMD_OPERATIONAL = 0x02
     };
 
-    /**
-     * @brief Module status as reported in GET_STATUS message.
-     * 
-     */
+    /// Command values for SET_PAUSE messages.
+    enum PauseCommand {
+        PAUSE_COMMAND_PAUSE = 0, ///< Pause current trajectory
+        PAUSE_COMMAND_RESUME = 1 ///< Resume current trajectory
+    };
+
+    /// Coordinate frame to use for a relative movement
+    enum CoordinateFrame {
+            COORD_FRAME_BASE = 0,    ///< Robot base coordinate frame
+            COORD_FRAME_EFFECTOR = 1 ///< End effector coordinate frame
+    };
+
+    /// Type of a segment within a constant velocity trajectory
+    enum SegmentType {
+            SEGMENT_TYPE_LINEAR = 1,     ///< Linear segment without intermedate point
+            SEGMENT_TYPE_ARC = 2,        ///< Circular arc passing through intermediate point
+            SEGMENT_TYPE_TANGENT_ARC = 3 ///< Tangent arc
+    };
+
+    /// Approach mode for a waypoint
+    enum ApproachMode {
+            APPROACH_MODE_PTP = 1,   ///< Point-to-point approach mode
+            APPROACH_MODE_LINEAR = 2 ///< Linear approach mode
+    };
+
+
+    /// Module status as reported in GET_STATUS message.
     struct ModuleState {
         ModuleType type;
         bool module_error;
