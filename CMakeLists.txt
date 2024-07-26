@@ -20,6 +20,7 @@ add_library(robcomm SHARED ${ROBCOMM_SOURCES})
 if(BUILD_EXAMPLES)
   add_subdirectory(examples/detected_modules)
   add_subdirectory(examples/jogging)
+  add_subdirectory(examples/read_joint_data)
 endif()
 
 if (DEBUG_FLAGS)

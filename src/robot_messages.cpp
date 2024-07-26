@@ -27,7 +27,7 @@ namespace robcomm {
      * @return double Angle in radians
      */
     double ntoh_angle(int32_t nrad_div_pi) {
-        return (double)(int32_t)ntohl(nrad_div_pi) * 1e-9 * M_PI;
+        return (int32_t)ntohl(nrad_div_pi) * 1.0e-9 * M_PI;
     }
 
     /**
@@ -47,7 +47,47 @@ namespace robcomm {
      * @return double Value in meters
      */
     double ntoh_linear(int32_t micrometers) {
-        return (double)(int32_t)ntohl(micrometers) * 1e-6;
+        return (int32_t)ntohl(micrometers) * 1.0e-6;
+    }
+
+    /**
+     * @brief Converts the given value from kilograms to milligrams.
+     *
+     * @param kilograms Value in kilograms
+     * @return uint32_t Value in milligrams
+     */
+    uint32_t hton_mass(double kilograms) {
+        return htonl((uint32_t)(kilograms * 1e6));
+    }
+
+    /**
+     * @brief Converts the given value from milligrams to kilograms.
+     *
+     * @param milligrams Value in milligrams
+     * @return double Value in meters
+     */
+    double ntoh_mass(uint32_t milligrams) {
+        return ntohl(milligrams) * 1.0e-6;
+    }
+
+    /**
+     * @brief Converts the given value from newton meters to millinewton meters.
+     *
+     * @param newton_meters Value in newton meters
+     * @return int32_t Value in millinewton meters
+     */
+    int32_t hton_torque(double newton_meters) {
+        return htonl((int32_t)(newton_meters * 1e3));
+    }
+
+    /**
+     * @brief Converts the given value from millinewton meters to newton meters.
+     *
+     * @param millinewton_meters Value in millinewton meters
+     * @return double Value in newton meters
+     */
+    double ntoh_torque(int32_t millinewton_meters) {
+        return (int32_t)ntohl(millinewton_meters) * 1.0e-3;
     }
 
     /**

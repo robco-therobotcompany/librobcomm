@@ -1,3 +1,21 @@
+/** \file main.cpp
+ * \brief Jogging example.
+ *
+ * Jogs the first joint back and forth using a triangular velocity profile.
+ *
+ * NOTE: This example stems from a time where the robot.receive() method was still blocking.
+ * This is why it is called in a separate thread here. However, since librobcomm is
+ * **not thread safe**, this is not recommended nowadays. Since then, the underlying receive
+ * socket has been set to nonblocking mode, so receive() can now be called in the main thread.
+ *
+ * Created on: -
+ * Author: Bernhard Vorhofer
+ * Contributor: -
+ *
+ * Copyright (C) 2023 RobCo GmbH - All Rights Reserved
+ *
+ */
+
 #include <robcomm/robcomm.hpp>
 #include <iostream>
 #include <cstdlib>

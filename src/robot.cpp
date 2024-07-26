@@ -1,320 +1,475 @@
+#include <arpa/inet.h>
+#include <cstdlib>
+#include <fcntl.h>
+#include <iostream>
 #include <robcomm/robcomm.hpp>
 #include <robcomm/robot_messages.hpp>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
+#include <sstream>
 #include <stdexcept>
 #include <string.h>
-#include <fcntl.h>
+#include <string>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <sstream>
-#include <cstdlib>
 
 #define ROBCOMM_RECV_BUFFER_SIZE 1024 // receive buffer size in bytes
 
-namespace robcomm
-{
+namespace robcomm {
 
-    Robot::Robot()
-    {
-        this->recv_buffer = new char[ROBCOMM_RECV_BUFFER_SIZE];
+	Robot::Robot() {
+		this->_recv_buffer = new char[ROBCOMM_RECV_BUFFER_SIZE];
 
-        this->robot_protocol_version_major = 0;
-        this->robot_protocol_version_minor = 0;
-    }
+		this->_robot_protocol_version_major = 0;
+		this->_robot_protocol_version_minor = 0;
+	}
 
-    void Robot::connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote)
-    {
-        this->host = host;
-        this->rx_port_local = rx_port_local;
-        this->tx_port_remote = tx_port_remote;
-        this->seq_counter = 0;
+	void Robot::connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote) {
+		this->_host = host;
+		this->_rx_port_local = rx_port_local;
+		this->_tx_port_remote = tx_port_remote;
+		this->_seq_counter = 0;
 
-        if ((sockfd_rx = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-            throw std::runtime_error("RX Socket creation failed.");
+		if((_sockfd_rx = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+			throw std::runtime_error("RX Socket creation failed.");
 
-        fcntl(sockfd_rx, F_SETFL, O_NONBLOCK); // set socket nonblocking
+		fcntl(_sockfd_rx, F_SETFL, O_NONBLOCK); // set socket nonblocking
 
-        local_addr.sin_family = AF_INET;
-        local_addr.sin_addr.s_addr = INADDR_ANY;
-        local_addr.sin_port = htons(rx_port_local);
+		_local_addr.sin_family = AF_INET;
+		_local_addr.sin_addr.s_addr = INADDR_ANY;
+		_local_addr.sin_port = htons(rx_port_local);
 
-        if (bind(sockfd_rx, (const sockaddr *)&local_addr, sizeof(local_addr)) < 0)
-            throw std::runtime_error("RX Socket bind() failed.");
+		if(bind(_sockfd_rx, (const sockaddr*)&_local_addr, sizeof(_local_addr)) < 0)
+			throw std::runtime_error("RX Socket bind() failed.");
 
-        if ((sockfd_tx = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-            throw std::runtime_error("TX socket creation failed");
+		memset(&_robot_addr, 0, sizeof(_robot_addr));
 
-        memset(&robot_addr, 0, sizeof(robot_addr));
+		_robot_addr.sin_family = AF_INET;
+		_robot_addr.sin_port = htons(tx_port_remote);
 
-        robot_addr.sin_family = AF_INET;
-        robot_addr.sin_port = htons(tx_port_remote);
+		inet_aton(host.c_str(), &_robot_addr.sin_addr);
 
-        inet_aton(host.c_str(), &robot_addr.sin_addr);
-    }
+		if((_sockfd_tx = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+			throw std::runtime_error("TX socket creation failed");
 
-    bool Robot::is_initialized() {
-        return q_valid && status_valid && modules_valid;
-    }
+		if(::connect(_sockfd_tx, (struct sockaddr*)&_robot_addr, sizeof(_robot_addr)) < 0)
+			throw std::runtime_error("TX socket connection failed");
+	}
 
-    void Robot::receive()
-    {
-        sockaddr_in from_addr;
+	bool Robot::is_initialized() {
+		return _modules_valid && _status_valid && _modules_valid;
+	}
 
-        socklen_t len = (socklen_t)sizeof(from_addr);
-        int n;
-        while ((n = recvfrom(sockfd_rx, recv_buffer, ROBCOMM_RECV_BUFFER_SIZE, 0, (sockaddr *)&from_addr, &len)) > 0) {
-            if (n < sizeof(GET_MSG))
-                throw std::runtime_error("Received packet is too short");
+	void Robot::receive() {
+		sockaddr_in from_addr;
 
-            GET_MSG *msg = (GET_MSG *)recv_buffer;
-            handle_get_message(msg);
-        }
-    }
+		socklen_t len = (socklen_t)sizeof(from_addr);
+		int n;
+		while((n = recvfrom(_sockfd_rx, _recv_buffer, ROBCOMM_RECV_BUFFER_SIZE, 0,
+		               (sockaddr*)&from_addr, &len)) > 0) {
+			if(n < sizeof(GET_MSG))
+				throw std::runtime_error("Received packet is too short");
 
-    void Robot::handle_get_message(GET_MSG *msg)
-    {
-        std::stringstream exception_ss;
+			GET_MSG* msg = (GET_MSG*)_recv_buffer;
 
-        uint16_t payload_len = ntohs(msg->payload_len);
+			if (msg->type == MSG_TYPE_GET_GLOBAL_VELOCITY) {
+				__asm__("nop");
+			}
 
-        switch (msg->type)
-        {
-        case MSG_TYPE_GET_UDP_PROTOCOL_VERSION:
-            if (payload_len != 2) {
-                exception_ss << "Invalid payload length " << payload_len << " for GET_UDP_PROTOCOL_VERSION messge";
-                throw std::runtime_error(exception_ss.str());
-            }
-            handle_get_udp_protocol_version((MSG_GET_UDP_PROTOCOL_VERSION*)msg->payload);
-            break;
-        case MSG_TYPE_GET_STATUS:
-            if (payload_len < 5) {
-                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_STATUS message";
-                throw std::runtime_error(exception_ss.str());
-            }
-            handle_get_status((MSG_GET_STATUS*)msg->payload);
-            status_valid = true;
-            break;
-        case MSG_TYPE_GET_JOINT_ABS:
-            if (payload_len < 1) {
-                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_JOINT_ABS message";
-                throw std::runtime_error(exception_ss.str());
-            }
-            handle_get_joint_abs((MSG_GET_JOINT_ABS*)msg->payload);
-            q_valid = true;
-            break;
-        case MSG_TYPE_GET_DETECTED_MODULES:
-            if (payload_len < 1) {
-                exception_ss << "Invalid payload length " << payload_len << " for MSG_TYPE_GET_DETECTED_MODULES message";
-                throw std::runtime_error(exception_ss.str());
-            }
-            handle_get_detected_modules((MSG_GET_DETECTED_MODULES*)msg->payload);
-            modules_valid = true;
-            break;
-        case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
-        case MSG_TYPE_GET_LAST_REACHED_WAYPOINT:
-        case MSG_TYPE_SET_JOINT_ABS:
-        case MSG_TYPE_SET_JOINT_OFFS:
-        case MSG_TYPE_SET_POSE_ABS:
-        case MSG_TYPE_GET_POSE_ABS:
-        case MSG_TYPE_SET_POSE_OFFS:
-        case MSG_TYPE_SET_CONSTANT_VELOCITY_TRAJECTORY:
-        case MSG_TYPE_SET_GLOBAL_VELOCITY:
-        case MSG_TYPE_GET_GLOBAL_VELOCITY:
-        case MSG_TYPE_SET_OUTPUT:
-        case MSG_TYPE_GET_OUTPUT:
-        case MSG_TYPE_GET_INPUT:
-        case MSG_TYPE_SET_JOINT_LEDS:
-        case MSG_TYPE_SET_G_COMPENSATION:
-        case MSG_TYPE_SET_PAYLOAD_MASS:
-        case MSG_TYPE_GET_PAYLOAD_MASS:
-        case MSG_TYPE_SET_TCP_SHIFT:
-        case MSG_TYPE_GET_TCP_SHIFT:
-        case MSG_TYPE_GET_JOINT_TEMPERATURE_PAIRS:
-        case MSG_TYPE_GET_JOINT_TORSIONS:
-        case MSG_TYPE_GET_JOINT_OVERLOADS_PERCENT:
-        case MSG_TYPE_GET_JOINT_TORQUES:
-        case MSG_TYPE_SET_ROBOT_STATE:
-        case MSG_TYPE_SET_STOP:
-            break;
-        default:
-            exception_ss << "Invalid message type '" << unsigned(msg->type) << "'";
-            throw std::runtime_error(exception_ss.str());
-            break;
-        }
-    }
+			handle_get_message(msg);
+		}
+	}
 
-    void Robot::handle_get_udp_protocol_version(MSG_GET_UDP_PROTOCOL_VERSION* msg) {
-        std::stringstream exception_ss;
+	const std::vector<Joint>& Robot::joints() const {
+		return this->_joints;
+	}
 
-        if (robot_protocol_version_major == 0 && robot_protocol_version_minor == 0) {
+	const std::vector<Module>& Robot::modules() const {
+		return this->_modules;
+	}
 
-            if (msg->major != COMPATIBLE_MAJOR_VERSION) {
-                exception_ss << "Controller reports incompatible protocol version " <<
-                    msg->major << "." << msg->minor;
-                throw std::runtime_error(exception_ss.str());
-            }
+	void Robot::check_payload_length_equal(uint16_t payload_len, uint16_t expected_len,
+	        std::string message_name) {
+		std::stringstream exception_ss;
+		if(payload_len != expected_len) {
+			exception_ss << "Invalid payload length " << payload_len << " for " << message_name
+			             << " messge (expected " << expected_len << ")";
+			if(payload_len > expected_len)
+				std::cout << exception_ss.str() << std::endl;
+			else
+				throw std::runtime_error(exception_ss.str());
+		}
+	}
 
-            robot_protocol_version_major = msg->major;
-            robot_protocol_version_minor = msg->minor;
-        } else if (robot_protocol_version_major != msg->major ||
-                robot_protocol_version_minor != msg->minor) {
-            exception_ss << "Controller changed protocol version from " <<
-                robot_protocol_version_major << "." << robot_protocol_version_minor <<
-                " to " << msg->major << "." << msg->minor << "during operation!";
-            throw std::runtime_error(exception_ss.str());
-        }
-    }
+	void Robot::check_payload_length_greater_than(uint16_t payload_len, uint16_t min_len,
+	        std::string message_name) {
+		std::stringstream exception_ss;
+		if(payload_len < min_len) {
+			exception_ss << "Invalid payload length " << payload_len << " for " << message_name
+			             << " messge (expected at least " << min_len << ")";
+			throw std::runtime_error(exception_ss.str());
+		}
+	}
 
-    void Robot::handle_get_status(MSG_GET_STATUS* msg) {
-        robot_status = msg_get_robot_status(msg);
+	void Robot::check_n_modules(uint8_t n_modules, std::string message_name) {
+		std::stringstream exception_ss;
+		if(n_modules != this->_modules.size()) {
+			exception_ss << message_name
+			             << " message has an invalid number of modules "
+			                "(expected "
+			             << this->_modules.size() << ", got " << n_modules;
+			throw std::runtime_error(exception_ss.str());
+		}
+	}
 
-        MSG_GET_STATUS_MODULES* modules = (MSG_GET_STATUS_MODULES*)msg->data;
+	void Robot::check_n_joints(uint8_t n_joints, std::string message_name) {
+		std::stringstream exception_ss;
+		if(n_joints != this->_joints.size()) {
+			exception_ss << message_name
+			             << " message has an invalid number of joints "
+			                "(expected "
+			             << this->_joints.size() << ", got " << n_joints;
+			throw std::runtime_error(exception_ss.str());
+		}
+	}
 
-        // Resize internal module state vector, if necessary
-        module_states.resize(modules->n_modules);
+	void Robot::handle_get_message(GET_MSG* msg) {
+		std::stringstream exception_ss;
 
-        for (int i = 0; i < modules->n_modules; i ++) {
-            ModuleState ms = msg_get_module_state(modules, i);
-            module_states[i] = ms;
-        }
+		uint16_t payload_len = ntohs(msg->payload_len);
 
-        MSG_GET_STATUS_ERRORS* errors = (MSG_GET_STATUS_ERRORS*)(msg->data + len_MSG_GET_STATUS_MODULES(modules));
+		switch(msg->type) {
+		case MSG_TYPE_GET_UDP_PROTOCOL_VERSION:
+			check_payload_length_equal(payload_len, sizeof(MSG_GET_UDP_PROTOCOL_VERSION),
+			        "GET_UDP_PROTOCOL_VERSION");
+			handle_get_udp_protocol_version((MSG_GET_UDP_PROTOCOL_VERSION*)msg->payload);
+			break;
+		case MSG_TYPE_GET_STATUS:
+			check_payload_length_greater_than(payload_len,
+			        sizeof(MSG_GET_STATUS) + sizeof(MSG_GET_STATUS_MODULES) +
+			                sizeof(MSG_GET_STATUS_ERRORS),
+			        "GET_STATUS");
+			handle_get_status((MSG_GET_STATUS*)msg->payload);
+			break;
+		case MSG_TYPE_GET_JOINT_ABS:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_JOINT_ABS),
+			        "GET_JOINT_ABS");
+			handle_get_joint_abs((MSG_GET_JOINT_ABS*)msg->payload);
+			break;
+		case MSG_TYPE_GET_DETECTED_MODULES:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_DETECTED_MODULES),
+			        "GET_DETECTED_MODULES");
+			handle_get_detected_modules((MSG_GET_DETECTED_MODULES*)msg->payload);
+			break;
+		case MSG_TYPE_GET_GLOBAL_VELOCITY:
+			check_payload_length_equal(payload_len, sizeof(MSG_GET_GLOBAL_VELOCITY),
+			        "GET_GLOBAL_VELOCITY");
+			handle_get_global_velocity((MSG_GET_GLOBAL_VELOCITY*)msg->payload);
+			break;
+		case MSG_TYPE_GET_PAYLOAD_MASS:
+			check_payload_length_equal(payload_len, sizeof(MSG_GET_PAYLOAD_MASS),
+			        "GET_PAYLOAD_MASS");
+			handle_get_payload_mass((MSG_GET_PAYLOAD_MASS*)msg->payload);
+			break;
+		case MSG_TYPE_GET_JOINT_TEMPERATURE_PAIRS:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_JOINT_TEMPERATURE_PAIRS),
+			        "GET_JOINT_TEMPERATURE_PAIRS");
+			handle_get_joint_temperature_pairs((MSG_GET_JOINT_TEMPERATURE_PAIRS*)msg->payload);
+			break;
+		case MSG_TYPE_GET_JOINT_TORSIONS:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_JOINT_TORSIONS),
+			        "GET_JOINT_TORSIONS");
+			handle_get_joint_torsions((MSG_GET_JOINT_TORSIONS*)msg->payload);
+			break;
+		case MSG_TYPE_GET_JOINT_OVERLOADS_PERCENT:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_JOINT_OVERLOADS_PERCENT),
+			        "GET_JOINT_OVERLOADS_PERCENT");
+			handle_get_joint_overloads_percent((MSG_GET_JOINT_OVERLOADS_PERCENT*)msg->payload);
+		case MSG_TYPE_GET_JOINT_TORQUES:
+			check_payload_length_greater_than(payload_len, sizeof(MSG_GET_JOINT_TORQUES),
+			        "GET_JOINT_TORQUES");
+			handle_get_joint_torques((MSG_GET_JOINT_TORQUES*)msg->payload);
+		case MSG_TYPE_GET_TCP_SHIFT:
+		case MSG_TYPE_GET_OUTPUT:
+		case MSG_TYPE_GET_INPUT:
+		case MSG_TYPE_GET_LAST_OCCURRED_ERRORS:
+		case MSG_TYPE_GET_LAST_REACHED_WAYPOINT:
+		case MSG_TYPE_GET_POSE_ABS:
+		case MSG_TYPE_SET_JOINT_ABS:
+		case MSG_TYPE_SET_JOINT_OFFS:
+		case MSG_TYPE_SET_POSE_ABS:
+		case MSG_TYPE_SET_POSE_OFFS:
+		case MSG_TYPE_SET_CONSTANT_VELOCITY_TRAJECTORY:
+		case MSG_TYPE_SET_GLOBAL_VELOCITY:
+		case MSG_TYPE_SET_OUTPUT:
+		case MSG_TYPE_SET_JOINT_LEDS:
+		case MSG_TYPE_SET_G_COMPENSATION:
+		case MSG_TYPE_SET_PAYLOAD_MASS:
+		case MSG_TYPE_SET_TCP_SHIFT:
+		case MSG_TYPE_SET_ROBOT_STATE:
+		case MSG_TYPE_SET_STOP:
+			break;
+		default:
+			exception_ss << "Invalid message type '" << unsigned(msg->type) << "'";
+			throw std::runtime_error(exception_ss.str());
+			break;
+		}
+	}
 
-        // Resize internal error code vector, if necessary
-        error_codes.resize(errors->n_errors);
+	void Robot::handle_get_udp_protocol_version(MSG_GET_UDP_PROTOCOL_VERSION* msg) {
+		std::stringstream exception_ss;
 
-        for (int i = 0; i < errors->n_errors; i ++) {
-            error_codes[i] = errors->errors[i];
-        }
-    }
+		if(_robot_protocol_version_major == 0 && _robot_protocol_version_minor == 0) {
+			if(msg->major != COMPATIBLE_MAJOR_VERSION) {
+				exception_ss << "Controller reports incompatible protocol version " << msg->major
+				             << "." << msg->minor;
+				throw std::runtime_error(exception_ss.str());
+			}
 
-    void Robot::handle_get_joint_abs(MSG_GET_JOINT_ABS* msg) {
-        std::stringstream exception_ss;
+			_robot_protocol_version_major = msg->major;
+			_robot_protocol_version_minor = msg->minor;
+		}
+		else if(_robot_protocol_version_major != msg->major ||
+		        _robot_protocol_version_minor != msg->minor) {
+			exception_ss << "Controller changed protocol version from "
+			             << _robot_protocol_version_major << "." << _robot_protocol_version_minor
+			             << " to " << msg->major << "." << msg->minor << "during operation!";
+			throw std::runtime_error(exception_ss.str());
+		}
+	}
 
-        // Resize joint angle vector if necessary
-        q.resize(msg->n_joints);
+	void Robot::handle_get_status(MSG_GET_STATUS* msg) {
+		std::stringstream exception_ss;
 
-        for (int i = 0; i < msg->n_joints; i ++) {
-            q[i] = ntoh_angle(msg->joint_values[i]);
-        }
-    }
+		_robot_status = msg_get_robot_status(msg);
 
-    void Robot::handle_get_detected_modules(MSG_GET_DETECTED_MODULES* msg) {
-        module_ids.resize(msg->n_modules);
+		MSG_GET_STATUS_MODULES* modules = (MSG_GET_STATUS_MODULES*)msg->data;
 
-        int actual_n_modules = 0;
-        for (int i = 0; i < msg->n_modules; i ++) {
-            MSG_GET_DETECTED_MODULES_MODULE* module =
-                (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i * sizeof(MSG_GET_DETECTED_MODULES_MODULE)]);
+		if(_modules_valid) {
+			if(this->_modules.size() + 2 != modules->n_modules) {
+				exception_ss << "Controller changed number of modules  from "
+				             << this->_modules.size() << " to " << unsigned(modules->n_modules)
+				             << " during operation!";
+				throw std::runtime_error(exception_ss.str());
+			}
 
-	    uint32_t module_id = ntohl(module->id);
+			for(int i = 0; i < this->_modules.size(); i++) {
+				ModuleState ms = msg_get_module_state(modules, i);
+				this->_modules[i]._state = ms;
+			}
+		}
 
-            // Ignore clamps
-            if (module_id >= 8000 && module_id <= 8999)
-                continue;
+		MSG_GET_STATUS_ERRORS* errors =
+		        (MSG_GET_STATUS_ERRORS*)(msg->data + len_MSG_GET_STATUS_MODULES(modules));
 
-            module_ids[actual_n_modules] = module_id;
-            actual_n_modules ++;
-        }
+		// Resize internal error code vector, if necessary
+		_active_error_codes.resize(errors->n_errors);
 
-        // Resize again, as we ignored some modules.
-        module_ids.resize(actual_n_modules);
-    }
+		for(int i = 0; i < errors->n_errors; i++) {
+			_active_error_codes[i] = errors->errors[i];
+		}
 
-    SET_MSG* Robot::new_message(uint8_t msg_type, size_t payload_size) {
-        return new_UDP_MSG(msg_type, seq_counter++, payload_size);
-    }
+		_status_valid = true;
+	}
 
-    void Robot::send_message(SET_MSG* msg) {
-        ssize_t n = sendto(sockfd_tx, msg, len_SET_MSG(msg), 0, (struct sockaddr*)&robot_addr,
-            sizeof(robot_addr));
+	void Robot::handle_get_joint_abs(MSG_GET_JOINT_ABS* msg) {
+		std::stringstream exception_ss;
 
-        if (n < 0) {
-            throw std::runtime_error("Error while sending message");
-        }
-    }
+		// Resize joints vector if necessary
+		_joints.resize(msg->n_joints);
 
-    void Robot::set_state(RobotStateCommand cmd) {
-        SET_MSG* msg = new_message(MSG_TYPE_SET_ROBOT_STATE, sizeof(MSG_SET_ROBOT_STATE));
-        MSG_SET_ROBOT_STATE* payload = (MSG_SET_ROBOT_STATE*)msg->payload;
+		for(int i = 0; i < msg->n_joints; i++) {
+			_joints[i]._q = ntoh_angle(msg->joint_values[i]);
+		}
 
-        payload->robot_state = (uint8_t)cmd;
+		this->_joints_valid = true;
+	}
 
-        send_message(msg);
+	void Robot::handle_get_detected_modules(MSG_GET_DETECTED_MODULES* msg) {
+		this->_modules.resize(msg->n_modules);
 
-        free(msg);
-    }
+		int actual_n_modules = 0;
+		for(int i = 0; i < msg->n_modules; i++) {
+			MSG_GET_DETECTED_MODULES_MODULE* module =
+			        (MSG_GET_DETECTED_MODULES_MODULE*)(&msg->data[i *
+			                sizeof(MSG_GET_DETECTED_MODULES_MODULE)]);
 
-    void Robot::jog_joints(std::vector<double> &dqs) {
-        if (dqs.size() != q.size())
-            std::runtime_error("jog_joints command has size different from internal joint angle vector");
+			uint32_t module_id = ntohl(module->id);
 
-        // TODO: centralize handling of sequence number
-        SET_MSG* msg = new_MSG_SET_JOINT_OFFS(seq_counter++, dqs.size());
-        MSG_SET_JOINT_OFFS* payload = (MSG_SET_JOINT_OFFS*)msg->payload;
+			// Ignore clamps
+			if(module_id >= 8000 && module_id <= 8999)
+				continue;
 
-        for (int i = 0; i < dqs.size(); i++) {
-            // / 100 because the controller will execute this dq within 10ms,
-            // so we need to command 1/100th of the velocity value (rad/s) at
-            // a time.
-            payload->joint_angles[i] = hton_angle(dqs[i] / 100.0);
-        }
+			_modules[actual_n_modules]._module_id = module_id;
+			actual_n_modules++;
+		}
 
-        send_message(msg);
+		// Resize again, as we ignored some modules.
+		_modules.resize(actual_n_modules);
+		_modules_valid = true;
+	}
 
-        free(msg);
-    }
+	void Robot::handle_get_global_velocity(MSG_GET_GLOBAL_VELOCITY* msg) {
+		_actual_global_velocity_percent = msg->actual_velocity_percent;
+		_desired_global_velocity_percent = msg->desired_velocity_percent;
+	}
 
-    void Robot::set_output(uint8_t bank, uint32_t address, uint32_t value) {
-        SET_MSG* msg = new_message(MSG_TYPE_SET_OUTPUT, sizeof(MSG_SET_OUTPUT));
-        MSG_SET_OUTPUT* payload = (MSG_SET_OUTPUT*)msg->payload;
+	void Robot::handle_get_payload_mass(MSG_GET_PAYLOAD_MASS* msg) {
+		_payload_mass_kg = ntoh_mass(msg->mass);
+		_payload_cog_x_meters = ntoh_linear(msg->center_of_mass_x);
+		_payload_cog_y_meters = ntoh_linear(msg->center_of_mass_y);
+		_payload_cog_z_meters = ntoh_linear(msg->center_of_mass_z);
+	}
 
-        payload->bank = bank;
-        payload->address = address;
-        payload->value = value;
+	void Robot::handle_get_joint_temperature_pairs(MSG_GET_JOINT_TEMPERATURE_PAIRS* msg) {
+		if(!_joints_valid) {
+			return;
+		}
 
-        send_message(msg);
+		check_n_joints(msg->n_joints, "GET_JOINT_TEMPERATURE_PAIRS");
 
-        free(msg);
-    }
+		for(int i = 0; i < msg->n_joints; i++) {
+			MSG_GET_JOINT_TEMPERATURE_PAIRS_TEMPS* temps =
+			        (MSG_GET_JOINT_TEMPERATURE_PAIRS_TEMPS*)(&msg->data[i *
+			                sizeof(MSG_GET_JOINT_TEMPERATURE_PAIRS_TEMPS)]);
 
-    RobotStatus Robot::get_status() {
-        return robot_status;
-    }
+			_joints[i]._motor_temperature_deg_c = ntoh_linear(temps->motor_temperature);
+			_joints[i]._controller_temperature_deg_c = ntoh_linear(temps->controller_temperature);
+		}
+	}
 
-    int Robot::get_module_count() {
-        return module_ids.size();
-    }
+	void Robot::handle_get_joint_torsions(MSG_GET_JOINT_TORSIONS* msg) {
+		if(!_joints_valid) {
+			return;
+		}
 
-    uint32_t Robot::get_module_type_id(int i) {
-        return module_ids[i];
-    }
+		check_n_joints(msg->n_joints, "GET_JOINT_TORSIONS");
 
-    ModuleState Robot::get_module_state(int i) {
-        return module_states[i];
-    }
-    
-    int Robot::get_error_count() {
-        return error_codes.size();
-    }
+		for(int i = 0; i < msg->n_joints; i++) {
+			_joints[i]._torsion_rad = ntoh_angle(msg->joint_torsions[i]);
+		}
+	}
 
-    uint16_t Robot::get_error_code(int i) {
-        return error_codes[i];
-    }
+	void Robot::handle_get_joint_overloads_percent(MSG_GET_JOINT_OVERLOADS_PERCENT* msg) {
+		if(!_joints_valid) {
+			return;
+		}
 
-    int Robot::get_joint_count() {
-        return q.size();
-    }
+		check_n_joints(msg->n_joints, "GET_JOINT_OVERLOADS_PERCENT");
 
-    const std::vector<double>& Robot::getJointAngles() const {
-        return q;
-    }
+		for(int i = 0; i < msg->n_joints; i++) {
+			_joints[i]._overload_percent = msg->overload_values[i];
+		}
+	}
 
-    Robot::~Robot()
-    {
-        close(sockfd_rx);
-        close(sockfd_tx);
-        delete[] recv_buffer;
-    }
-}
+	void Robot::handle_get_joint_torques(MSG_GET_JOINT_TORQUES* msg) {
+		if(!_joints_valid) {
+			return;
+		}
+
+		check_n_joints(msg->n_joints, "GET_JOINT_TORQUES");
+
+		for(int i = 0; i < msg->n_joints; i++) {
+			_joints[i]._torque_n = ntoh_torque(msg->torque_values[i]);
+		}
+	}
+
+	SET_MSG* Robot::new_message(uint8_t msg_type, size_t payload_size) {
+		return new_UDP_MSG(msg_type, _seq_counter++, payload_size);
+	}
+
+	void Robot::send_message(SET_MSG* msg) {
+		ssize_t n = send(_sockfd_tx, msg, len_SET_MSG(msg), 0);
+
+		if(n < 0) {
+			throw std::runtime_error("Error while sending message");
+		}
+	}
+
+	void Robot::set_state(RobotStateCommand cmd) {
+		SET_MSG* msg = new_message(MSG_TYPE_SET_ROBOT_STATE, sizeof(MSG_SET_ROBOT_STATE));
+		MSG_SET_ROBOT_STATE* payload = (MSG_SET_ROBOT_STATE*)msg->payload;
+
+		payload->robot_state = (uint8_t)cmd;
+
+		send_message(msg);
+
+		free(msg);
+	}
+
+	void Robot::jog_joints(std::vector<double>& dqs) {
+		if(dqs.size() != _joints.size()) {
+			throw std::runtime_error("jog_joints command has size different from internal joint vector");
+		}
+
+		// TODO: centralize handling of sequence number
+		SET_MSG* msg = new_MSG_SET_JOINT_OFFS(_seq_counter++, dqs.size());
+		MSG_SET_JOINT_OFFS* payload = (MSG_SET_JOINT_OFFS*)msg->payload;
+
+		for(int i = 0; i < dqs.size(); i++) {
+			// / 100 because the controller will execute this dq within 10ms,
+			// so we need to command 1/100th of the velocity value (rad/s) at
+			// a time.
+			payload->joint_angles[i] = hton_angle(dqs[i] / 100.0);
+		}
+
+		send_message(msg);
+		free(msg);
+	}
+
+	void Robot::set_output(uint8_t bank, uint32_t address, uint32_t value) {
+		SET_MSG* msg = new_message(MSG_TYPE_SET_OUTPUT, sizeof(MSG_SET_OUTPUT));
+		MSG_SET_OUTPUT* payload = (MSG_SET_OUTPUT*)msg->payload;
+
+		payload->bank = bank;
+		payload->address = address;
+		payload->value = value;
+
+		send_message(msg);
+
+		free(msg);
+	}
+
+	RobotStatus Robot::get_status() {
+		return _robot_status;
+	}
+
+	int Robot::get_module_count() {
+		return _modules.size();
+	}
+
+	uint32_t Robot::get_module_type_id(int i) {
+		return _modules[i]._module_id;
+	}
+
+	ModuleState Robot::get_module_state(int i) {
+		return _modules[i]._state;
+	}
+
+	int Robot::get_active_error_count() {
+		return _active_error_codes.size();
+	}
+
+	uint16_t Robot::get_active_error_code(int i) {
+		return _active_error_codes[i];
+	}
+
+	int Robot::get_joint_count() {
+		return _joints.size();
+	}
+
+	const std::vector<double> Robot::getJointAngles() const {
+		std::vector<double> result(this->_joints.size());
+
+		for(int i = 0; i < this->_joints.size(); i++) {
+			result[i] = this->_joints[i]._q;
+		}
+
+		return result;
+	}
+
+	Robot::~Robot() {
+		close(_sockfd_rx);
+		close(_sockfd_tx);
+		delete[] _recv_buffer;
+	}
+} // namespace robcomm

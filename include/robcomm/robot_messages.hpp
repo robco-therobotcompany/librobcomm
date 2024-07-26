@@ -16,13 +16,13 @@
 #include <sys/types.h>
 
 namespace robcomm {
-	struct __attribute__((packed)) RobcommCartesianVector {
+	struct __attribute__((packed)) CartesianVector {
 		int32_t x; /*<! X-component of Cartesian position, in micrometers */
 		int32_t y; /*<! Y-component of Cartesian position, in micrometers */
 		int32_t z; /*<! Z-component of Cartesian position, in micrometers */
 	};
 
-	struct __attribute__((packed)) RobcommEulerAngles {
+	struct __attribute__((packed)) EulerAngles {
 		int32_t euler_z; /*<! Z-component of Cartesian orientation, in ZYX Euler angles, encoded as
 		                    nanorad/pi */
 		int32_t euler_y; /*<! Y-component of Cartesian orientation, in ZYX Euler angles, encoded as
@@ -32,8 +32,8 @@ namespace robcomm {
 	};
 
 	struct __attribute__((packed)) RobcommCartesianPose {
-		RobcommCartesianVector position;
-		RobcommEulerAngles orientation;
+		CartesianVector position;
+		EulerAngles orientation;
 	};
 
 	enum MSG_TYPE {
@@ -139,7 +139,7 @@ namespace robcomm {
 		                             can smoothly transition to the next trajectory */
 		RobcommCartesianPose target_pose; /*<! Cartesian pose for final configuration at the end of
 		                                     the segment */
-		RobcommCartesianVector intermediate_point; /*<! Cartesian vector representing intermediate
+		CartesianVector intermediate_point; /*<! Cartesian vector representing intermediate
 		                               point of the segment, ignored when segment type is not arc */
 	};
 
@@ -180,7 +180,7 @@ namespace robcomm {
 
 	struct __attribute__((packed)) MSG_SET_PAYLOAD_MASS {
 		uint32_t mass;                         /*<! New payload mass in milligrams */
-		RobcommCartesianVector center_of_mass; /*<! Center of mass, relative to the distal point of
+		CartesianVector center_of_mass; /*<! Center of mass, relative to the distal point of
 		                                          the end effector (ignoring any TCP shift) */
 	};
 
@@ -410,6 +410,12 @@ namespace robcomm {
 
 	int32_t hton_linear(double meters);
 	double ntoh_linear(int32_t micrometers);
+
+	uint32_t hton_mass(double kilograms);
+	double ntoh_mass(uint32_t milligrams);
+
+	int32_t hton_torque(double newton_meters);
+	double ntoh_torque(int32_t millinewton_meters);
 
 	int len_SET_MSG(SET_MSG* m);
 	SET_MSG* new_UDP_MSG(uint8_t msg_type, uint8_t seq, size_t payload_size);
