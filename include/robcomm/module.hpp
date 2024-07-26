@@ -22,7 +22,18 @@ namespace robcomm {
             Module(uint32_t id);
             ~Module();
 
+            /**
+             * Returns the module type ID of the module.
+             *
+             * @return Module type ID
+             */
             const uint32_t module_id() const;
+
+            /**
+             * Returns the current module state.
+             *
+             * @return ModuleState struct representing current state of the module.
+             */
             const ModuleState module_state() const;
         private:
             uint32_t _module_id;

@@ -68,17 +68,49 @@ namespace robcomm {
 		 */
 		void jog_joints(std::vector<double>& dqs);
 
+		/**
+		 * @brief Set a digital/analog output.
+		 *
+		 * @param bank Output bank
+		 * @param address Output address within bank
+		 * @param value Value to set output to
+		 */
 		void set_output(uint8_t bank, uint32_t address, uint32_t value);
 
+		/**
+		 * @brief Returns the state of the internal robot model.
+		 *
+		 * @return true if the internal robot model has finished initialization
+		 * @return false if the internal robot model has not finished initialization
+		 */
 		bool is_initialized();
+
+		/**
+		 * @brief Returns the current status of the robot.
+		 *
+		 * @return RobotStatus struct representing the current status of the robot
+		 */
 		RobotStatus get_status();
-		int get_module_count();
-		uint32_t get_module_type_id(int i);
-		ModuleState get_module_state(int i);
+
+		/**
+		 * @brief Returns number of active errors.
+		 *
+		 * @return Number of active errors
+		 */
 		int get_active_error_count();
+
+		/**
+		 * @brief Return active error code i.
+		 * 
+		 * @return Active error code with the given index i
+		 */
 		uint16_t get_active_error_code(int i);
 
-		int get_joint_count();
+		/**
+		 * @brief Get the current joint angle vector.
+		 *
+		 * @return Vector with current joint angles in rad
+		 */
 		const std::vector<double> getJointAngles() const;
 
 	private:

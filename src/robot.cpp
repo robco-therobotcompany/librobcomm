@@ -433,28 +433,12 @@ namespace robcomm {
 		return _robot_status;
 	}
 
-	int Robot::get_module_count() {
-		return _modules.size();
-	}
-
-	uint32_t Robot::get_module_type_id(int i) {
-		return _modules[i]._module_id;
-	}
-
-	ModuleState Robot::get_module_state(int i) {
-		return _modules[i]._state;
-	}
-
 	int Robot::get_active_error_count() {
 		return _active_error_codes.size();
 	}
 
 	uint16_t Robot::get_active_error_code(int i) {
 		return _active_error_codes[i];
-	}
-
-	int Robot::get_joint_count() {
-		return _joints.size();
 	}
 
 	const std::vector<double> Robot::getJointAngles() const {
