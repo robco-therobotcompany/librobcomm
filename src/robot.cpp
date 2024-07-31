@@ -23,6 +23,10 @@ namespace robcomm {
 		this->_robot_protocol_version_minor = 0;
 	}
 
+	void Robot::connect(std::string host, uint16_t rx_port_local) {
+		this->connect(host, rx_port_local, 0);
+	}
+
 	void Robot::connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote) {
 		this->_host = host;
 		this->_rx_port_local = rx_port_local;
@@ -48,11 +52,13 @@ namespace robcomm {
 
 		inet_aton(host.c_str(), &_robot_addr.sin_addr);
 
-		if((_sockfd_tx = socket(AF_INET, SOCK_STREAM, 0)) < 0)
-			throw std::runtime_error("TX socket creation failed");
+		if (tx_port_remote != 0) {
+			if((_sockfd_tx = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+				throw std::runtime_error("TX socket creation failed");
 
-		if(::connect(_sockfd_tx, (struct sockaddr*)&_robot_addr, sizeof(_robot_addr)) < 0)
-			throw std::runtime_error("TX socket connection failed");
+			if(::connect(_sockfd_tx, (struct sockaddr*)&_robot_addr, sizeof(_robot_addr)) < 0)
+				throw std::runtime_error("TX socket connection failed");
+		}
 	}
 
 	bool Robot::is_initialized() {
@@ -378,6 +384,10 @@ namespace robcomm {
 	}
 
 	void Robot::send_message(SET_MSG* msg) {
+		if (this->_sockfd_tx <= 0) {
+			throw std::runtime_error("TX socket was not set up, unable to send commands");
+		}
+
 		ssize_t n = send(_sockfd_tx, msg, len_SET_MSG(msg), 0);
 
 		if(n < 0) {

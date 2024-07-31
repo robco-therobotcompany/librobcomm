@@ -30,6 +30,11 @@ namespace robcomm {
 		~Robot();
 
 		/**
+		 * @brief Initializes network sockets for robot connection (receive only).
+		 */
+		void connect(std::string host, uint16_t rx_port_local);
+
+		/**
 		 * @brief Initializes network sockets for robot connection.
 		 */
 		void connect(std::string host, uint16_t rx_port_local, uint16_t tx_port_remote);
@@ -121,8 +126,8 @@ namespace robcomm {
 		std::string _host;
 		uint16_t _rx_port_local;
 		uint16_t _tx_port_remote;
-		int _sockfd_rx;
-		int _sockfd_tx;
+		int _sockfd_rx = 0;
+		int _sockfd_tx = 0;
 		sockaddr_in _robot_addr;
 		sockaddr_in _local_addr;
 		char* _recv_buffer;
