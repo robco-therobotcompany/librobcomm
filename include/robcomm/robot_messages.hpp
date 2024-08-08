@@ -179,7 +179,7 @@ namespace robcomm {
 	};
 
 	struct __attribute__((packed)) MSG_SET_PAYLOAD_MASS {
-		uint32_t mass;                         /*<! New payload mass in milligrams */
+		uint32_t mass;                  /*<! New payload mass in milligrams */
 		CartesianVector center_of_mass; /*<! Center of mass, relative to the distal point of
 		                                          the end effector (ignoring any TCP shift) */
 	};
@@ -405,33 +405,190 @@ namespace robcomm {
 		                            output torque of the robot joints, in millinewton meters */
 	};
 
+	/**
+	 * @brief Converts the given angle from radians to nanorad/pi for transport.
+	 *
+	 * @param rad Angle in radians
+	 * @return Angle in nanorad/pi
+	 */
 	int32_t hton_angle(double rad);
+
+	/**
+	 * @brief Converts the given angle from nanorad/pi to radians.
+	 *
+	 * @param nrad_div_pi Angle in nanorad/pi
+	 * @return double Angle in radians
+	 */
 	double ntoh_angle(int32_t nrad_div_pi);
 
+	/**
+	 * @brief Converts the given value from meters to micrometers.
+	 *
+	 * @param meters Value in meters
+	 * @return int32_t Value in nanometers
+	 */
 	int32_t hton_linear(double meters);
+
+	/**
+	 * @brief Converts the given value from micrometers to meters.
+	 *
+	 * @param micrometers Value in micrometers
+	 * @return double Value in meters
+	 */
 	double ntoh_linear(int32_t micrometers);
 
+	/**
+	 * @brief Converts the given value from kilograms to milligrams.
+	 *
+	 * @param kilograms Value in kilograms
+	 * @return uint32_t Value in milligrams
+	 */
 	uint32_t hton_mass(double kilograms);
+
+	/**
+	 * @brief Converts the given value from milligrams to kilograms.
+	 *
+	 * @param milligrams Value in milligrams
+	 * @return double Value in meters
+	 */
 	double ntoh_mass(uint32_t milligrams);
 
+	/**
+	 * @brief Converts the given value from newton meters to millinewton meters.
+	 *
+	 * @param newton_meters Value in newton meters
+	 * @return int32_t Value in millinewton meters
+	 */
 	int32_t hton_torque(double newton_meters);
+
+	/**
+	 * @brief Converts the given value from millinewton meters to newton meters.
+	 *
+	 * @param millinewton_meters Value in millinewton meters
+	 * @return double Value in newton meters
+	 */
 	double ntoh_torque(int32_t millinewton_meters);
 
+	/**
+	 * @brief Converts the given value from degrees Celsius to millidegrees Celsius.
+	 *
+	 * @param degrees_c Value in degrees Celsius
+	 * @return int32_t Value in millidegrees Celsius
+	 */
+	int32_t hton_temperature(double degrees_c);
+
+	/**
+	 * @brief Converts the given value from millidegrees Celsius to degrees Celsius.
+	 *
+	 * @param millidegrees_c Value in millidegrees Celsius
+	 * @return double Value in degrees Celsius
+	 */
+	double ntoh_temperature(int32_t millidegrees_c);
+
+	/**
+	 * @brief Returns the size of the given SET message, including its payload.
+	 *
+	 * @param m Pointer to message struct
+	 * @return Size of message in bytes, including payload
+	 */
 	int len_SET_MSG(SET_MSG* m);
+
+	/**
+	 * @brief Allocates a new SET_MSG struct.
+	 *
+	 * Note: This function allocates memory. It is the caller's responsibility to
+	 *       free the returned SET_MSG pointer.
+	 *
+	 * @param msg_type Message type value
+	 * @param seq Sequence number
+	 * @param payload_size Size of the payload part of the message
+	 * @return SET_MSG*
+	 */
 	SET_MSG* new_UDP_MSG(uint8_t msg_type, uint8_t seq, size_t payload_size);
 
+	/**
+	 * @brief Returns the size of the given SET_JOINT_OFFS message payload in bytes.
+	 *
+	 * @param m Pointer to payload struct
+	 * @return Size of payload in bytes
+	 */
 	int len_MSG_SET_JOINT_OFFS(MSG_SET_JOINT_OFFS* m);
+
+	/**
+	 * @brief Allocastes a new SET_MSG struct with a SET_JOINT_OFFS payload and
+	 *	  the given parameters.
+	 *
+	 * Note: This function allocates memory. It is the caller's responsibility to free
+	 *	 the returned SET_MSG pointer.
+	 *
+	 * @param seq Message sequence number
+	 * @param num_joints Number of joints in payload
+	 */
 	SET_MSG* new_MSG_SET_JOINT_OFFS(uint8_t seq, int num_joints);
 
+	/**
+	 * @brief Returns the size of the given GET_STATUS_MODULES message payload in bytes.
+	 *
+	 * @param m Pointer to payload struct
+	 * @return Size of payload in bytes
+	 */
 	int len_MSG_GET_STATUS_MODULES(MSG_GET_STATUS_MODULES* m);
+
+	/**
+	 * @brief Returns the size of the given GET_STATUS_ERRORS message payload in bytes.
+	 *
+	 * @param m Pointer to payload struct
+	 * @return Size of payload in bytes
+	 */
 	int len_MSG_GET_STATUS_ERRORS(MSG_GET_STATUS_ERRORS* m);
 
+	/**
+	 * @brief Get RobotState from the robot_state field of a GET_STATUS message.
+	 *
+	 * @param robot_state content of robot_state field of GET_STATUS message.
+	 * @return RobotState
+	 */
 	RobotState msg_get_robot_state(uint8_t robot_state);
+
+	/**
+	 * @brief Get SafeStopState from safety_state field of GET_STATUS message.
+	 *
+	 * @param safety_state safety_state field of GET_STATUS message.
+	 * @return SafeStopState
+	 */
 	SafeStopState msg_get_safe_stop_state(uint8_t safety_state);
+
+	/**
+	 * @brief Get SafetyMode from safety_state field of GET_STATUS message.
+	 *
+	 * @param safety_mode safety_mode field of GET_STATUS message.
+	 * @return SafetyMode
+	 */
 	SafetyMode msg_get_safety_mode(uint8_t safety_state);
+	
+	/**
+	 * @brief Get RobotStatus struct from GET_STATUS message.
+	 *
+	 * @param msg pointer to GET_STATUS message struct.
+	 * @return RobotStatus
+	 */
 	RobotStatus msg_get_robot_status(MSG_GET_STATUS* msg);
 
+	/**
+	 * @brief Get ModuleType from module_state field of GET_STATUS message.
+	 *
+	 * @param module_state module_state value from GET_STATUS message.
+	 * @return ModuleType
+	 */
 	ModuleType msg_get_module_type(uint8_t module_state);
+
+	/**
+	 * @brief Get ModuleState for module inside GET_STATUS messaage.
+	 *
+	 * @param modules pointer to modules part of GET_STATUS message
+	 * @param i index of the module to get state for
+	 * @return ModuleState of module i
+	 */
 	ModuleState msg_get_module_state(MSG_GET_STATUS_MODULES* modules, int i);
 
 	void print_UDP_MSG(SET_MSG* m);

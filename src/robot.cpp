@@ -338,8 +338,8 @@ namespace robcomm {
 			        (MSG_GET_JOINT_TEMPERATURE_PAIRS_TEMPS*)(&msg->data[i *
 			                sizeof(MSG_GET_JOINT_TEMPERATURE_PAIRS_TEMPS)]);
 
-			_joints[i]._motor_temperature_deg_c = ntoh_linear(temps->motor_temperature);
-			_joints[i]._controller_temperature_deg_c = ntoh_linear(temps->controller_temperature);
+			_joints[i]._motor_temperature_deg_c = ntoh_temperature(temps->motor_temperature);
+			_joints[i]._controller_temperature_deg_c = ntoh_temperature(temps->controller_temperature);
 		}
 	}
 

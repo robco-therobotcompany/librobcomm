@@ -10,137 +10,62 @@
 
 namespace robcomm {
 
-    /**
-     * @brief Converts the given angle from radians to nanorad/pi for transport.
-     * 
-     * @param rad Angle in radians
-     * @return Angle in nanorad/pi
-     */
     int32_t hton_angle(double rad) {
         return htonl((int32_t)(rad * 1e9 / M_PI));
     }
 
-    /**
-     * @brief Converts the given angle from nanorad/pi to radians.
-     * 
-     * @param nrad_div_pi Angle in nanorad/pi
-     * @return double Angle in radians
-     */
     double ntoh_angle(int32_t nrad_div_pi) {
         return (int32_t)ntohl(nrad_div_pi) * 1.0e-9 * M_PI;
     }
 
-    /**
-     * @brief Converts the given value from meters to micrometers.
-     * 
-     * @param meters Value in meters
-     * @return int32_t Value in nanometers
-     */
     int32_t hton_linear(double meters) {
         return htonl((int32_t)(meters * 1e6));
     }
 
-    /**
-     * @brief Converts the given value from micrometers to meters.
-     * 
-     * @param micrometers Value in micrometers
-     * @return double Value in meters
-     */
     double ntoh_linear(int32_t micrometers) {
         return (int32_t)ntohl(micrometers) * 1.0e-6;
     }
 
-    /**
-     * @brief Converts the given value from kilograms to milligrams.
-     *
-     * @param kilograms Value in kilograms
-     * @return uint32_t Value in milligrams
-     */
     uint32_t hton_mass(double kilograms) {
         return htonl((uint32_t)(kilograms * 1e6));
     }
 
-    /**
-     * @brief Converts the given value from milligrams to kilograms.
-     *
-     * @param milligrams Value in milligrams
-     * @return double Value in meters
-     */
     double ntoh_mass(uint32_t milligrams) {
         return ntohl(milligrams) * 1.0e-6;
     }
 
-    /**
-     * @brief Converts the given value from newton meters to millinewton meters.
-     *
-     * @param newton_meters Value in newton meters
-     * @return int32_t Value in millinewton meters
-     */
     int32_t hton_torque(double newton_meters) {
         return htonl((int32_t)(newton_meters * 1e3));
     }
 
-    /**
-     * @brief Converts the given value from millinewton meters to newton meters.
-     *
-     * @param millinewton_meters Value in millinewton meters
-     * @return double Value in newton meters
-     */
     double ntoh_torque(int32_t millinewton_meters) {
         return (int32_t)ntohl(millinewton_meters) * 1.0e-3;
     }
 
-    /**
-     * @brief Returns the size of the given SET_JOINT_OFFS message payload in bytes.
-     * 
-     * @param m Pointer to payload struct
-     * @return Size of payload in bytes
-     */
+    int32_t hton_temperature(double degrees_c) {
+        return htonl((int32_t)(degrees_c * 1e3));
+    }
+
+    double ntoh_temperature(int32_t millidegrees_c) {
+        return (int32_t)ntohl(millidegrees_c) * 1.0e-3;
+    }
+
     int len_MSG_SET_JOINT_OFFS(MSG_SET_JOINT_OFFS* m) {
         return sizeof(MSG_SET_JOINT_OFFS) + m->num_joints * sizeof(*m->joint_angles);
     }
 
-    /**
-     * @brief Returns the size of the given SET message, including its payload.
-     * 
-     * @param m Pointer to message struct
-     * @return Size of message in bytes, including payload
-     */
     int len_SET_MSG(SET_MSG* m) {
         return sizeof(SET_MSG) + ntohs(m->payload_len);
     }
 
-    /**
-     * @brief Returns the size of the given GET_STATUS_MODULES message payload in bytes.
-     * 
-     * @param m Pointer to payload struct
-     * @return Size of payload in bytes
-     */
     int len_MSG_GET_STATUS_MODULES(MSG_GET_STATUS_MODULES* m) {
         return sizeof(MSG_GET_STATUS_MODULES) + m->n_modules * sizeof(*m->module_states);
     }
 
-    /**
-     * @brief Returns the size of the given GET_STATUS_ERRORS message payload in bytes.
-     * 
-     * @param m Pointer to payload struct
-     * @return Size of payload in bytes
-     */
     int len_MSG_GET_STATUS_ERRORS(MSG_GET_STATUS_ERRORS* m) {
         return sizeof(MSG_GET_STATUS_ERRORS) + m->n_errors * sizeof(*m->errors);
     }
 
-    /**
-     * @brief Allocates a new SET_MSG struct.
-     * 
-     * Note: This function allocates memory. It is the caller's responsibility to
-     *       free the returned SET_MSG pointer.
-     * 
-     * @param msg_type Message type value
-     * @param seq Sequence number
-     * @param payload_size Size of the payload part of the message
-     * @return SET_MSG*
-     */
     SET_MSG* new_UDP_MSG(uint8_t msg_type, uint8_t seq, size_t payload_size) {
         SET_MSG* msg = (SET_MSG*)malloc(sizeof(SET_MSG) + payload_size);
 
@@ -161,12 +86,6 @@ namespace robcomm {
         return msg;
     }
 
-    /**
-     * @brief Get RobotState from the robot_state field of a GET_STATUS message.
-     * 
-     * @param robot_state content of robot_state field of GET_STATUS message.
-     * @return RobotState 
-     */
     RobotState msg_get_robot_state(uint8_t robot_state) {
         uint8_t state = robot_state & ROBOT_STATE_DETAIL_MASK;
 
@@ -191,12 +110,6 @@ namespace robcomm {
         throw std::runtime_error(except_ss.str());
     }
 
-    /**
-     * @brief Get SafeStopState from safety_state field of GET_STATUS message.
-     * 
-     * @param safety_state safety_state field of GET_STATUS message.
-     * @return SafeStopState 
-     */
     SafeStopState msg_get_safe_stop_state(uint8_t safety_state) {
         uint8_t state = safety_state & SAFE_STOP_STATE_MASK;
         state = state >> 5;
@@ -215,12 +128,6 @@ namespace robcomm {
         throw std::runtime_error(except_ss.str());
     }
 
-    /**
-     * @brief Get SafetyMode from safety_state field of GET_STATUS message.
-     * 
-     * @param safety_mode safety_mode field of GET_STATUS message.
-     * @return SafetyMode 
-     */
     SafetyMode msg_get_safety_mode(uint8_t safety_state) {
         uint8_t mode = safety_state & SAFETY_MODE_MASK;
 
@@ -236,12 +143,6 @@ namespace robcomm {
         throw std::runtime_error(except_ss.str());
     }
 
-    /**
-     * @brief Get RobotStatus struct from GET_STATUS message.
-     * 
-     * @param msg pointer to GET_STATUS message struct.
-     * @return RobotStatus 
-     */
     RobotStatus msg_get_robot_status(MSG_GET_STATUS* msg) {
         RobotStatus rs;
         rs.error_flags = msg->error_flags;
@@ -254,12 +155,6 @@ namespace robcomm {
         return rs;
     }
 
-    /**
-     * @brief Get ModuleType from module_state field of GET_STATUS message.
-     * 
-     * @param module_state module_state value from GET_STATUS message.
-     * @return ModuleType 
-     */
     ModuleType msg_get_module_type(uint8_t module_state) {
         std::stringstream except_ss;
         uint8_t mtype = module_state & MODULE_TYPE_MASK;
@@ -277,13 +172,6 @@ namespace robcomm {
         throw std::runtime_error(except_ss.str());
     }
 
-    /**
-     * @brief Get ModuleState for module inside GET_STATUS messaage.
-     * 
-     * @param modules pointer to modules part of GET_STATUS message
-     * @param i index of the module to get state for 
-     * @return ModuleState of module i
-     */
     ModuleState msg_get_module_state(MSG_GET_STATUS_MODULES* modules, int i) {
         ModuleState ms;
 
